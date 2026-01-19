@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Slide Logic</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#000;
+  color:#fff;
+  font-family:system-ui,sans-serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+.controls{
+  margin:10px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:center;
+}
+
+select,button{
+  font-size:16px;
+  padding:8px 12px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+}
+button{background:#2c3e50;color:#fff}
+button:hover{filter:brightness(1.05)}
+button:disabled{opacity:.5;cursor:not-allowed}
+
+.board{
+  margin-top:14px;
+  display:grid;
+  grid-template-columns:repeat(5,60px);
+  grid-template-rows:repeat(5,60px);
+  gap:5px;
+  position:relative;
+  user-select:none;
+  touch-action:manipulation;
+}
+
+.cell{
+  width:60px;
+  height:60px;
+  border:2px solid #444;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+}
+.cell.center{border-color:red}
+
+.piece{
+  width:40px;
+  height:40px;
+  position:absolute;
+  left:0;
+  top:0;
+  border-radius:6px;
+  border:2px solid #aaa;
+  cursor:pointer;
+  transform:translate3d(0,0,0);
+  transition:transform .22s cubic-bezier(.2,.9,.2,1), opacity .18s ease, border-width .12s ease;
+  will-change:transform, opacity;
+  z-index:5;
+}
+.piece.selected{
+  border:4px solid #fff;
+  box-shadow:0 0 10px #fff;
+  z-index:10;
+}
+
+/* RENKLER */
+.red{background:red}
+.yellow{background:#f6ff00}
+.green{background:limegreen}
+.purple{background:purple}
+.blue{background:dodgerblue}
+.orange{background:orange}
+
+/* ⭐ KIRMIZI BLOK YILDIZ */
+.piece.red::after{
+  content:"★";
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  font-size:20px;
+  color:#fff;
+  text-shadow:0 0 6px rgba(0,0,0,.5);
+  pointer-events:none;
+}
+
+.touch-controls{
+  margin-top:16px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  align-items:center;
+}
+.touch-row{display:flex;gap:10px}
+.arrow-btn{
+  background:#2c3e50;
+  padding:14px 16px;
+  border-radius:12px;
+  font-size:22px;
+  color:#fff;
+  border:none;
+  touch-action:manipulation;
+}
+
+/* ⭐ KAZANMA YILDIZ ANİMASYONU */
+.star-end{
+  position:absolute;
+  top:140px;
+  left:140px;
+  color:gold;
+  font-size:60px;
+  transform:translate(-50%,-50%) scale(0);
+  animation:grow 2.5s forwards;
+  pointer-events:none;
+  z-index:100;
+}
+@keyframes grow{
+  to{
+    transform:translate(-50%,-50%) scale(4) rotate(720deg);
+    opacity:0;
+  }
+}
+
+/* POPUP OVERLAY (ARKAPLAN BULANIK) */
+.overlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  padding:18px;
+}
+.overlay.show{display:flex}
+.overlay-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  backdrop-filter:blur(3px);
+}
+.overlay-card{
+  position:relative;
+  background:#111;
+  padding:18px 16px;
+  border-radius:16px;
+  text-align:center;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 18px 50px rgba(0,0,0,.65);
+  animation:pop .18s ease-out forwards;
+  width:min(420px, 92vw);
+}
+@keyframes pop{
+  from{transform:translateY(10px) scale(.98);opacity:0}
+  to{transform:translateY(0) scale(1);opacity:1}
+}
+.btn-next{
+  background:#27ae60;
+  padding:12px 16px;
+  border-radius:12px;
+  font-size:18px;
+  border:none;
+}
+.btn-close{
+  background:#2c3e50;
+  padding:12px 16px;
+  border-radius:12px;
+  font-size:18px;
+  border:none;
+}
+.overlay-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+
+body.dim .controls,
+body.dim .board,
+body.dim .touch-controls{
+  filter: grayscale(0.2) brightness(0.7);
+  opacity: 0.55;
+  pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <select id="levelSelect"></select>
+  <button id="undoBtn">Geri Al</button>
+  <button id="restartBtn">Bölümü Yenile</button>
+</div>
+
+<div class="board" id="board"></div>
+
+<div class="touch-controls">
+  <button class="arrow-btn" id="btnUp">⬆️</button>
+  <div class="touch-row">
+    <button class="arrow-btn" id="btnLeft">⬅️</button>
+    <button class="arrow-btn" id="btnDown">⬇️</button>
+    <button class="arrow-btn" id="btnRight">➡️</button>
+  </div>
+</div>
+
+<div class="overlay" id="winOverlay" aria-hidden="true">
+  <div class="overlay-backdrop"></div>
+  <div class="overlay-card" role="dialog" aria-modal="true">
+    <div style="font-size:18px;opacity:.95">Bölüm Tamamlandı 🎉</div>
+    <div class="overlay-actions">
+      <button class="btn-next" id="nextLevelBtn">Sonraki Bölüm ➡️</button>
+      <button class="btn-close" id="closeOverlayBtn">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(async () => {
+  const W = 5, H = 5;
+  const STEP = 65, OFFSET = 10;
+  const ANIM_MS = 220;
+  const EXIT_MS = 180;
+  const FADE_MS = 160;
+  const WIN_DELAY_MS = 650; // biraz daha hızlı
+
+  const board = document.getElementById("board");
+  const levelSelect = document.getElementById("levelSelect");
+  const winOverlay = document.getElementById("winOverlay");
+  const nextLevelBtn = document.getElementById("nextLevelBtn");
+  const closeOverlayBtn = document.getElementById("closeOverlayBtn");
+
+  let levelsData = {};
+
+  async function loadLevelsFromJSON(){
+    // GitHub Pages uyumlu: levels.json bu index.html ile AYNI KLASORDE olmali
+    const url = new URL('levels.json', window.location.href);
+    const res = await fetch(url.toString(), { cache: 'no-store' });
+    if(!res.ok){
+      throw new Error(`HTTP ${res.status} - levels.json okunamadi`);
+    }
+    const data = await res.json();
+    if(!data || typeof data !== 'object'){
+      throw new Error('levels.json formati hatali (object bekleniyor)');
+    }
+    levelsData = data;
+  }
+
+
+  let currentLevelKey = null;
+  let positions = [];
+  let history = [];
+  let selectedId = null;
+  let isMoving = false;
+  let hasWon = false;
+  let winTimer = null;
+
+  const pieceEls = new Map();
+  const deepCopy = (o) => JSON.parse(JSON.stringify(o));
+
+  function posToTransform(x,y){
+    return `translate3d(${x*STEP + OFFSET}px, ${y*STEP + OFFSET}px, 0)`;
+  }
+
+  function setupGrid(){
+    board.innerHTML = "";
+    pieceEls.clear();
+    for(let i=0; i<W*H; i++){
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      if(i === 12){
+        cell.classList.add("center");
+        cell.textContent = "★";
+      }
+      board.appendChild(cell);
+    }
+  }
+
+  function pickFirstSelectable(){
+    selectedId = positions.length ? positions[0].id : null;
+  }
+
+  function placePieces(){
+    if(selectedId !== null && !positions.some(p => p.id === selectedId)) pickFirstSelectable();
+    if(selectedId === null && positions.length) pickFirstSelectable();
+
+    for(const [id, el] of pieceEls.entries()){
+      if(!positions.some(p => p.id === id)){
+        el.remove();
+        pieceEls.delete(id);
+      }
+    }
+
+    for(const p of positions){
+      let el = pieceEls.get(p.id);
+      if(!el){
+        el = document.createElement("div");
+        el.className = `piece ${p.c}`;
+        el.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          if(hasWon) return;
+          selectedId = p.id;
+          updateSelectionUI();
+        }, { passive:false });
+        board.appendChild(el);
+        pieceEls.set(p.id, el);
+      }
+      el.style.opacity = "1";
+      el.style.transform = posToTransform(p.x, p.y);
+    }
+
+    updateSelectionUI();
+  }
+
+  function updateSelectionUI(){
+    for(const [id, el] of pieceEls.entries()){
+      el.classList.toggle("selected", id === selectedId);
+    }
+  }
+
+  function validateNoOverlap(list){
+    const s = new Set();
+    for(const p of list){
+      const key = `${p.x},${p.y}`;
+      if(s.has(key)) return false;
+      s.add(key);
+    }
+    return true;
+  }
+
+  function rebuildLevelSelect(){
+    levelSelect.innerHTML = "";
+    const keys = Object.keys(levelsData);
+    for(const k of keys){
+      const opt = document.createElement("option");
+      opt.value = k;
+      opt.textContent = k;
+      levelSelect.appendChild(opt);
+    }
+  }
+
+  function hideOverlay(){
+    winOverlay.classList.remove("show");
+    winOverlay.setAttribute("aria-hidden","true");
+    document.body.classList.remove("dim");
+  }
+  function showOverlay(){
+    winOverlay.classList.add("show");
+    winOverlay.setAttribute("aria-hidden","false");
+    document.body.classList.add("dim");
+  }
+
+  function clearWinTimer(){
+    if(winTimer){
+      clearTimeout(winTimer);
+      winTimer = null;
+    }
+  }
+
+  function loadLevel(key){
+    clearWinTimer();
+    currentLevelKey = key;
+
+    const raw = levelsData[key];
+    if(!raw){ alert("Level bulunamadı: " + key); return; }
+    if(!validateNoOverlap(raw)){ alert("Level çakışmalı: " + key); return; }
+
+    positions = raw.map((p, i) => ({ id:i, c:p.c, x:p.x, y:p.y }));
+    history = [ deepCopy(positions) ];
+    selectedId = positions.length ? positions[0].id : null;
+
+    isMoving = false;
+    hasWon = false;
+    hideOverlay();
+
+    setupGrid();
+    placePieces();
+    levelSelect.value = key;
+  }
+
+  function commitState(){
+    history.push(deepCopy(positions));
+  }
+
+  function applySnapshot(snap){
+    clearWinTimer();
+    positions = deepCopy(snap);
+    if(selectedId !== null && !positions.some(p => p.id === selectedId)) pickFirstSelectable();
+    if(selectedId === null && positions.length) pickFirstSelectable();
+    hasWon = false;
+    hideOverlay();
+    placePieces();
+  }
+
+  function undoOnce(){
+    if(isMoving) return;
+    if(history.length <= 1) return;
+    history.pop();
+    applySnapshot(history[history.length - 1]);
+  }
+
+  let undoLock = false;
+  function requestUndo(){
+    if(undoLock) return;
+    undoLock = true;
+    undoOnce();
+    setTimeout(() => { undoLock = false; }, 220);
+  }
+
+  function occupied(x,y, exceptId=null){
+    return positions.some(p => p.id !== exceptId && p.x === x && p.y === y);
+  }
+  function inBounds(x,y){ return x>=0 && x<W && y>=0 && y<H; }
+
+  function computeMoveResult(piece, dx, dy){
+    const firstX = piece.x + dx;
+    const firstY = piece.y + dy;
+
+    if(inBounds(firstX, firstY) && occupied(firstX, firstY, piece.id)){
+      return { changed:false };
+    }
+
+    if(!inBounds(firstX, firstY)){
+      return { changed:true, falls:true, edgeX: piece.x, edgeY: piece.y, outX: piece.x + dx, outY: piece.y + dy };
+    }
+
+    let nx = piece.x, ny = piece.y;
+    while(true){
+      const tx = nx + dx, ty = ny + dy;
+      if(!inBounds(tx, ty)){
+        return { changed:true, falls:true, edgeX: nx, edgeY: ny, outX: tx, outY: ty };
+      }
+      if(occupied(tx, ty, piece.id)){
+        const moved = (nx !== piece.x || ny !== piece.y);
+        return { changed:moved, falls:false, nx, ny };
+      }
+      nx = tx; ny = ty;
+    }
+  }
+
+  function showStarAnimation(){
+    const star = document.createElement("div");
+    star.className = "star-end";
+    star.textContent = "★";
+    board.appendChild(star);
+    setTimeout(() => star.remove(), 2500);
+  }
+
+  function onWin(){
+    hasWon = true;
+    showStarAnimation();
+    clearWinTimer();
+    winTimer = setTimeout(() => {
+      showOverlay();
+    }, WIN_DELAY_MS);
+  }
+
+  function move(dir){
+    if(isMoving) return;
+    if(selectedId === null) return;
+    if(hasWon) return;
+
+    let dx=0, dy=0;
+    if(dir==="up") dy=-1;
+    if(dir==="down") dy=1;
+    if(dir==="left") dx=-1;
+    if(dir==="right") dx=1;
+
+    const piece = positions.find(p => p.id === selectedId);
+    if(!piece) return;
+
+    const result = computeMoveResult(piece, dx, dy);
+    if(!result.changed) return;
+
+    isMoving = true;
+    const el = pieceEls.get(piece.id);
+
+    if(result.falls){
+      // ✅ DUVARIN DIŞINA ÇIKARSA KAYBOL
+      piece.x = result.edgeX; piece.y = result.edgeY;
+      if(el) el.style.transform = posToTransform(piece.x, piece.y);
+
+      setTimeout(() => { if(el) el.style.transform = posToTransform(result.outX, result.outY); }, 20);
+      setTimeout(() => { if(el) el.style.opacity = "0"; }, EXIT_MS);
+
+      setTimeout(() => {
+        positions = positions.filter(p => p.id !== piece.id);
+        pickFirstSelectable();
+        placePieces();
+        commitState();
+        isMoving = false;
+      }, EXIT_MS + FADE_MS);
+
+      return;
+    }
+
+    piece.x = result.nx; piece.y = result.ny;
+    if(el) el.style.transform = posToTransform(piece.x, piece.y);
+
+    // ✅ SADECE KIRMIZI MERKEZE GELİNCE KAZAN
+    if(piece.c === "red" && piece.x === 2 && piece.y === 2){
+      onWin();
+    }
+
+    setTimeout(() => {
+      placePieces();
+      commitState();
+      isMoving = false;
+    }, ANIM_MS);
+  }
+
+  function nextLevel(){
+    const keys = Object.keys(levelsData);
+    const idx = keys.indexOf(currentLevelKey);
+    const next = (idx >= 0) ? keys[idx+1] : null;
+    if(next) loadLevel(next);
+    else { hideOverlay(); alert("Bu son bölüm. 🎉"); }
+  }
+
+  function bindBtn(btnId, dir){
+    const btn = document.getElementById(btnId);
+    btn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      move(dir);
+    }, { passive:false });
+    btn.addEventListener("click", () => move(dir));
+  }
+
+  async function init(){
+    try{
+      await loadLevelsFromJSON();
+    }catch(err){
+      alert('levels.json yuklenemedi. Repo icinde levels.json dosyasi index.html ile ayni klasorde olmali.
+
+Hata: ' + err.message);
+      throw err;
+    }
+
+    rebuildLevelSelect();
+    const keys = Object.keys(levelsData);
+    if(!keys.length){
+      alert('levels.json icinde hic level yok.');
+      return;
+    }
+    currentLevelKey = keys[0];
+    setupGrid();
+
+    document.getElementById("restartBtn").addEventListener("click", () => loadLevel(currentLevelKey));
+
+    const undoBtn = document.getElementById("undoBtn");
+    undoBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); requestUndo(); }, { passive:false });
+    undoBtn.addEventListener("click", requestUndo);
+
+    bindBtn("btnUp","up");
+    bindBtn("btnDown","down");
+    bindBtn("btnLeft","left");
+    bindBtn("btnRight","right");
+
+    levelSelect.addEventListener("change", (e) => loadLevel(e.target.value));
+
+    nextLevelBtn.addEventListener("click", () => { hideOverlay(); nextLevel(); });
+    closeOverlayBtn.addEventListener("click", hideOverlay);
+    winOverlay.querySelector(".overlay-backdrop").addEventListener("click", hideOverlay);
+
+    // ✅ KLAVYE YÖN TUŞLARI + WASD
+    document.addEventListener("keydown", (e) => {
+      if(e.repeat) return;
+      const k = e.key;
+      if(k === "ArrowUp" || k === "w" || k === "W"){ e.preventDefault(); move("up"); }
+      if(k === "ArrowDown" || k === "s" || k === "S"){ e.preventDefault(); move("down"); }
+      if(k === "ArrowLeft" || k === "a" || k === "A"){ e.preventDefault(); move("left"); }
+      if(k === "ArrowRight" || k === "d" || k === "D"){ e.preventDefault(); move("right"); }
+
+      if((e.ctrlKey || e.metaKey) && (k === "z" || k === "Z")){ e.preventDefault(); requestUndo(); }
+      if(k === "Escape" && winOverlay.classList.contains("show")){ hideOverlay(); }
+    }, { passive:false });
+
+    loadLevel(currentLevelKey);
+  }
+    await init();
+})();
+</script>
+</body>
+</html>
