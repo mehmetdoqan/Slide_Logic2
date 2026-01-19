@@ -274,16 +274,12 @@ body.dim .touch-controls{
     levelsData = DEFAULT_LEVELS_DATA;
     if(errBox){
       errBox.style.display='block';
-      errBox.textContent =
-        'levels.json okunamadi, bu nedenle dahili yedek level listesi kullanildi.
-' +
-        'GitHub Pages icin repo kok dizininde (root) levels.json oldugundan emin ol.
+      errBox.textContent = `levels.json okunamadı, bu nedenle dahili yedek level listesi kullanıldı.
+GitHub Pages için repo kök dizininde (root) levels.json olduğundan emin ol.
 
-' +
-        'Denenen adresler:
-- ' + tried.join('
-- ');
-    }
+Denenen adresler:
+- ${tried.join('\n- ')}`;
+}
   }
 
 
