@@ -1,0 +1,31 @@
+kolay
+1-9  - sadece kırmızı taş hareketi ile 
+10-12 - diğer renklerden bir taşı hareket ettirip kırmızı taşın yolunu oluşturma
+13-15 - diğer renklerde bir taşı hareket ettirip kırmızı taşın yolundan çekilmesini sağlama
+15-20 - diğer renklerde iki taşı hareket ettirerek kırmızı taşın yolunu oluşturma
+
+Orta
+1-9  -  1.bölüm e level2 yi al    level6 yı  5.bölüme al  leve 7 yi al
+10-12 - level 3 ü 10 a al
+13-15 - Önce kırmızı bir kere hareket eder sonra kırmızının değdiği taşı kullanarak çözüme gidilir level 5 gibi
+15-20 -
+
+Zor
+1-9  - 
+10-12 - 
+13-15 - 
+15-20 -
+
+Daha Zor
+1-9  - 
+10-12 - 
+13-15 - 
+15-20 -
+
+Çözümler
+10 - Mavi aşağı - Kırmızı sağ yukarı sol
+11- Yeşil aşağı - Kırmızı Aşağı sağ yukarı
+12 - Mavi yukarı - Kırmızı Sol Aşağı
+13- Yeşil aşağı - Kırmızı Sol Aşağı 
+14 - 
+15- Sarı sağ aşağı -  Kırmızı Sol Aşağı Sağ

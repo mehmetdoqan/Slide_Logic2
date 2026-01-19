@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slide Logic - JSON Level Editor</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;background:#000;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .wrap{max-width:1200px;margin:0 auto;padding:14px;display:grid;gap:12px;grid-template-columns:1fr 380px}
+    @media (max-width: 980px){.wrap{grid-template-columns:1fr}}
+    .card{background:#0f1114;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px}
+    h1{font-size:18px;margin:0 0 10px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .row + .row{margin-top:10px}
+    input,select,textarea,button{
+      font-size:14px;border-radius:10px;border:1px solid rgba(255,255,255,.16);
+      background:#12151a;color:#fff;padding:9px 10px;outline:none
+    }
+    button{cursor:pointer;border:none;background:#2c3e50}
+    button:hover{filter:brightness(1.06)}
+    button.ok{background:#27ae60}
+    button.warn{background:#c0392b}
+    button.ghost{background:#1a2230}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .muted{opacity:.75}
+    .small{font-size:12px;opacity:.8}
+
+    .boardWrap{display:flex;justify-content:center}
+    .board{
+      margin-top:4px;
+      display:grid;
+      grid-template-columns:repeat(5,64px);
+      grid-template-rows:repeat(5,64px);
+      gap:6px;
+      padding:10px;
+      border-radius:16px;
+      background:radial-gradient(ellipse at center, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.12);
+      user-select:none;
+      touch-action:manipulation;
+    }
+    .cell{
+      width:64px;height:64px;
+      border:2px solid rgba(255,255,255,.18);
+      border-radius:10px;
+      display:flex;align-items:center;justify-content:center;
+      position:relative;
+    }
+    .cell.center{border-color:#ff3b3b}
+    .cell.center::after{
+      content:"★";
+      font-size:26px;
+      color:#fff;
+      opacity:.95;
+      text-shadow:0 0 10px rgba(0,0,0,.55);
+    }
+    .dot{
+      width:44px;height:44px;border-radius:10px;
+      border:2px solid rgba(255,255,255,.6);
+      box-shadow:0 8px 18px rgba(0,0,0,.5);
+      display:flex;align-items:center;justify-content:center;
+      font-weight:700;
+    }
+    .blue{background:dodgerblue}
+    .yellow{background:#f6ff00;color:#000;border-color:rgba(0,0,0,.25)}
+    .green{background:limegreen}
+    .purple{background:purple}
+    .orange{background:orange;color:#000;border-color:rgba(0,0,0,.25)}
+    .red{background:red}
+    .red::after{content:"★";color:#fff;font-size:18px;text-shadow:0 0 8px rgba(0,0,0,.45)}
+
+    .palette{display:flex;gap:8px;flex-wrap:wrap}
+    .sw{
+      width:38px;height:38px;border-radius:12px;border:2px solid rgba(255,255,255,.28);
+      cursor:pointer;display:flex;align-items:center;justify-content:center;
+      position:relative;
+    }
+    .sw.sel{outline:3px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.6)}
+    .sw span{font-size:14px;font-weight:700;text-shadow:0 0 8px rgba(0,0,0,.4)}
+
+    .list{max-height:260px;overflow:auto;border-radius:12px;border:1px solid rgba(255,255,255,.12)}
+    .item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .item:last-child{border-bottom:none}
+    .badge{width:14px;height:14px;border-radius:4px;border:1px solid rgba(255,255,255,.35)}
+    textarea{width:100%;min-height:150px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
+
+    .status{font-size:13px;line-height:1.35}
+    .good{color:#7CFC98}
+    .bad{color:#ff7b7b}
+
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(8px);
+      background: rgba(0,0,0,.55);
+      border-bottom:1px solid rgba(255,255,255,.08);
+      padding:10px 14px;
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    }
+    .brand{font-weight:700}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Slide Logic • JSON Level Editor</div>
+    <div class="small muted">Bu sayfa <b>levels.json</b> formatı ile çalışır (GitHub Pages uyumlu).</div>
+  </div>
+
+  <div class="wrap">
+    <!-- LEFT -->
+    <div class="card">
+      <h1>Düzenleme</h1>
+
+      <div class="row">
+        <label class="muted">Level adı</label>
+        <input id="levelName" value="Bölüm 1" style="flex:1;min-width:220px" />
+        <button id="btnSave" class="ok">Kaydet</button>
+        <button id="btnNew" class="ghost">Yeni</button>
+      </div>
+
+      <div class="row">
+        <div class="muted">Renk seç</div>
+        <div class="palette" id="palette"></div>
+        <button id="btnClear" class="warn">Tahtayı Temizle</button>
+      </div>
+
+      <div class="boardWrap">
+        <div class="board" id="board" aria-label="5x5 grid"></div>
+      </div>
+
+      <div class="row status" id="status"></div>
+
+      <div class="row">
+        <button id="btnDownloadJSON" class="ok">levels.json İndir</button>
+        <button id="btnCopyJSON" class="ghost">JSON Kopyala</button>
+        <label class="ghost" style="display:inline-flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;cursor:pointer">
+          JSON İçeri Aktar
+          <input id="fileInput" type="file" accept="application/json" style="display:none" />
+        </label>
+      </div>
+
+      <div class="row">
+        <textarea id="ioBox" placeholder="İstersen buraya levels.json içeriğini yapıştır → 'Yapıştırılanı Yükle'"></textarea>
+      </div>
+
+      <div class="row">
+        <button id="btnLoadPasted" class="ghost">Yapıştırılanı Yükle</button>
+        <button id="btnLoadFromFetch" class="ghost" title="Aynı klasördeki levels.json dosyasını okur">levels.json (fetch) Yenile</button>
+      </div>
+
+      <div class="row small muted">
+        İpucu: Renk seç → hücreye tıkla = ekle/değiştir. Aynı renk üstüne tıkla = sil. Merkez (★) dolu olamaz.
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="card">
+      <h1>Leveller (levels.json)</h1>
+
+      <div class="row">
+        <select id="levelSelect" style="flex:1"></select>
+        <button id="btnLoad" class="ok">Yükle</button>
+      </div>
+
+      <div class="row">
+        <button id="btnDuplicate" class="ghost">Kopyala</button>
+        <button id="btnDelete" class="warn">Sil</button>
+        <button id="btnSort" class="ghost" title="Bölüm 1..n sırasına göre sıralar">Sırala</button>
+      </div>
+
+      <div class="row">
+        <div class="list" id="piecesList" style="width:100%"></div>
+      </div>
+
+      <div class="row small muted">
+        Not: Bu editor <b>localStorage</b> kullanmaz. Değişiklikleri korumak için <b>levels.json indir</b> → GitHub'a yükle.
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const W=5, H=5;
+  const CENTER = {x:2,y:2};
+  const COLORS = [
+    {c:"red",    label:"★"},
+    {c:"blue",   label:""},
+    {c:"yellow", label:""},
+    {c:"green",  label:""},
+    {c:"purple", label:""},
+    {c:"orange", label:""}
+  ];
+
+  const $ = (id)=>document.getElementById(id);
+  const boardEl = $("board");
+  const paletteEl = $("palette");
+  const statusEl = $("status");
+  const piecesListEl = $("piecesList");
+  const levelNameEl = $("levelName");
+  const levelSelectEl = $("levelSelect");
+  const ioBox = $("ioBox");
+  const fileInput = $("fileInput");
+
+  let selectedColor = "red";
+  let levelsData = {};       // object map name -> pieces[]
+  let grid = new Map();      // "x,y" -> color
+
+  function key(x,y){ return `${x},${y}`; }
+  function inBounds(x,y){ return x>=0 && x<W && y>=0 && y<H; }
+  function getPiece(x,y){ return grid.get(key(x,y)) || null; }
+  function setPiece(x,y,c){
+    if(!inBounds(x,y)) return;
+    if(x===CENTER.x && y===CENTER.y) return;
+    grid.set(key(x,y), c);
+  }
+  function removePiece(x,y){ grid.delete(key(x,y)); }
+
+  function piecesFromGrid(){
+    const arr = [];
+    for(const [k,c] of grid.entries()){
+      const [x,y] = k.split(",").map(Number);
+      arr.push({c,x,y});
+    }
+    arr.sort((a,b)=>{
+      const pa = (a.c==="red")?0:1;
+      const pb = (b.c==="red")?0:1;
+      if(pa!==pb) return pa-pb;
+      if(a.c!==b.c) return a.c.localeCompare(b.c);
+      if(a.y!==b.y) return a.y-b.y;
+      return a.x-b.x;
+    });
+    return arr;
+  }
+
+  function gridFromPieces(pieces){
+    grid = new Map();
+    for(const p of (pieces||[])){
+      if(!p) continue;
+      const x = Number(p.x), y = Number(p.y);
+      const c = String(p.c||"").trim();
+      if(!inBounds(x,y)) continue;
+      if(x===CENTER.x && y===CENTER.y) continue;
+      if(!c) continue;
+      grid.set(key(x,y), c);
+    }
+  }
+
+  function validate(){
+    const pieces = piecesFromGrid();
+    const hasRed = pieces.some(p=>p.c==="red");
+    let ok = true;
+    let msgs = [];
+
+    if(!hasRed){ ok=false; msgs.push("🟥 <b>Kırmızı</b> taş yok (zorunlu)."); }
+    if(pieces.length===0){ ok=false; msgs.push("Hiç taş yok."); }
+    if(getPiece(CENTER.x,CENTER.y)){ ok=false; msgs.push("Merkez (★) boş olmalı."); }
+
+    statusEl.innerHTML = (ok
+      ? `<span class="good">✅ Uygun</span> — Taş sayısı: ${pieces.length}`
+      : `<span class="bad">⚠️ Eksik / hatalı</span><br>${msgs.join("<br>")}`
+    );
+
+    renderPiecesList(pieces);
+    return ok;
+  }
+
+  function renderBoard(){
+    boardEl.innerHTML = "";
+    for(let y=0;y<H;y++){
+      for(let x=0;x<W;x++){
+        const cell = document.createElement("div");
+        cell.className = "cell" + (x===CENTER.x && y===CENTER.y ? " center" : "");
+        const c = getPiece(x,y);
+        if(c){
+          const d = document.createElement("div");
+          d.className = `dot ${c}`;
+          cell.appendChild(d);
+        }
+        cell.addEventListener("click", ()=>onCellClick(x,y));
+        boardEl.appendChild(cell);
+      }
+    }
+    validate();
+  }
+
+  function onCellClick(x,y){
+    if(x===CENTER.x && y===CENTER.y) return;
+    const current = getPiece(x,y);
+    if(!current){
+      setPiece(x,y, selectedColor);
+    }else{
+      if(current === selectedColor) removePiece(x,y);
+      else setPiece(x,y, selectedColor);
+    }
+    renderBoard();
+  }
+
+  function renderPalette(){
+    paletteEl.innerHTML="";
+    COLORS.forEach(({c,label})=>{
+      const sw = document.createElement("div");
+      sw.className = `sw ${c}` + (c===selectedColor ? " sel" : "");
+      const s = document.createElement("span");
+      s.textContent = label;
+      sw.appendChild(s);
+      sw.addEventListener("click", ()=>{
+        selectedColor = c;
+        renderPalette();
+      });
+      paletteEl.appendChild(sw);
+    });
+  }
+
+  function renderPiecesList(pieces){
+    piecesListEl.innerHTML = "";
+    if(!pieces.length){
+      piecesListEl.innerHTML = `<div class="item"><span class="small muted">Henüz taş yok.</span></div>`;
+      return;
+    }
+    for(const p of pieces){
+      const row = document.createElement("div");
+      row.className = "item";
+      const b = document.createElement("div");
+      b.className = `badge ${p.c}`;
+      row.appendChild(b);
+      const t = document.createElement("div");
+      t.innerHTML = `<b>${p.c}</b> <span class="small muted">x:${p.x} y:${p.y}</span>`;
+      row.appendChild(t);
+
+      const del = document.createElement("button");
+      del.className = "ghost";
+      del.textContent = "Sil";
+      del.style.marginLeft = "auto";
+      del.addEventListener("click", ()=>{
+        removePiece(p.x,p.y);
+        renderBoard();
+      });
+      row.appendChild(del);
+
+      piecesListEl.appendChild(row);
+    }
+  }
+
+  function keysSorted(){
+    const keys = Object.keys(levelsData);
+    keys.sort((a,b)=>{
+      const na = (String(a).match(/(\d+)/)||[])[1];
+      const nb = (String(b).match(/(\d+)/)||[])[1];
+      const ia = na ? Number(na) : Number.POSITIVE_INFINITY;
+      const ib = nb ? Number(nb) : Number.POSITIVE_INFINITY;
+      if(Number.isFinite(ia) && Number.isFinite(ib) && ia !== ib) return ia-ib;
+      return String(a).localeCompare(String(b), "tr");
+    });
+    return keys;
+  }
+
+  function rebuildLevelSelect(selectKey=null){
+    const keys = keysSorted();
+    levelSelectEl.innerHTML = "";
+    for(const k of keys){
+      const opt = document.createElement("option");
+      opt.value = k;
+      opt.textContent = k;
+      levelSelectEl.appendChild(opt);
+    }
+    if(selectKey && keys.includes(selectKey)) levelSelectEl.value = selectKey;
+    else if(keys.length) levelSelectEl.value = keys[0];
+  }
+
+  function makeNextDefaultName(){
+    let maxN = 0;
+    for(const k of Object.keys(levelsData)){
+      const m = String(k).match(/Bölüm\s*(\d+)/i);
+      if(m) maxN = Math.max(maxN, Number(m[1])||0);
+    }
+    return `Bölüm ${maxN+1}`;
+  }
+
+  function loadLevel(name){
+    const pieces = levelsData[name];
+    if(!pieces){ alert("Level bulunamadı: " + name); return; }
+    levelNameEl.value = name;
+    gridFromPieces(pieces);
+    renderBoard();
+  }
+
+  function saveCurrentLevel(){
+    const name = (levelNameEl.value || "").trim() || makeNextDefaultName();
+    const pieces = piecesFromGrid();
+    if(!validate()){
+      if(!confirm("Level eksik/hatalı görünüyor. Yine de kaydedilsin mi?")) return;
+    }
+    levelsData[name] = pieces;
+    rebuildLevelSelect(name);
+    alert("✅ Kaydedildi: " + name);
+  }
+
+  function newLevel(){
+    levelNameEl.value = makeNextDefaultName();
+    grid = new Map();
+    renderBoard();
+  }
+
+  function duplicateLevel(){
+    const src = levelSelectEl.value;
+    if(!src || !levelsData[src]) return alert("Kopyalanacak level yok.");
+    const base = src.replace(/\s*\(kopya.*\)$/i,"");
+    let name = base + " (kopya)";
+    let i = 2;
+    while(levelsData[name]){
+      name = `${base} (kopya ${i})`;
+      i++;
+    }
+    levelsData[name] = JSON.parse(JSON.stringify(levelsData[src]));
+    rebuildLevelSelect(name);
+    alert("✅ Kopyalandı: " + name);
+  }
+
+  function deleteLevel(){
+    const k = levelSelectEl.value;
+    if(!k || !levelsData[k]) return alert("Silinecek level yok.");
+    if(!confirm(`Silinsin mi?\n\n${k}`)) return;
+    delete levelsData[k];
+    const keys = keysSorted();
+    rebuildLevelSelect(keys[0] || null);
+    if(keys.length) loadLevel(levelSelectEl.value);
+    else newLevel();
+  }
+
+  function clearBoard(){
+    if(!confirm("Tahtadaki tüm taşlar silinsin mi?")) return;
+    grid = new Map();
+    renderBoard();
+  }
+
+  function exportLevelsJSONText(){
+    const out = {};
+    for(const k of keysSorted()) out[k] = levelsData[k];
+    return JSON.stringify(out, null, 2);
+  }
+
+  async function copyJSON(){
+    const text = exportLevelsJSONText();
+    try{
+      await navigator.clipboard.writeText(text);
+      alert("✅ Kopyalandı");
+    }catch{
+      ioBox.value = text; ioBox.focus(); ioBox.select();
+      alert("Kopyalama izni yok. Metin kutusundan Ctrl+C ile kopyalayabilirsin.");
+    }
+  }
+
+  function downloadJSON(){
+    const text = exportLevelsJSONText();
+    const blob = new Blob([text], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "levels.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function loadFromText(text){
+    let obj;
+    try{ obj = JSON.parse(text); }
+    catch(e){ alert("JSON okunamadı: " + e.message); return; }
+    if(!obj || typeof obj !== "object" || Array.isArray(obj)){
+      alert("Bu JSON levels.json formatında değil (object olmalı).");
+      return;
+    }
+    const cleaned = {};
+    for(const [k,v] of Object.entries(obj)){
+      if(!Array.isArray(v)) continue;
+      cleaned[k] = v
+        .filter(p => p && typeof p === "object")
+        .map(p => ({ c:String(p.c||"").trim(), x:Number(p.x), y:Number(p.y) }))
+        .filter(p => p.c && Number.isFinite(p.x) && Number.isFinite(p.y));
+    }
+    levelsData = cleaned;
+    rebuildLevelSelect();
+    if(Object.keys(levelsData).length) loadLevel(levelSelectEl.value);
+    else newLevel();
+    alert("✅ levels.json yüklendi");
+  }
+
+  function loadPasted(){
+    const s = (ioBox.value||"").trim();
+    if(!s) return alert("Metin kutusu boş.");
+    loadFromText(s);
+  }
+
+  async function fetchLevels(){
+    const candidates = ["levels.json", "./levels.json"];
+    let lastErr = null;
+    for(const url of candidates){
+      try{
+        const res = await fetch(url, {cache:"no-store"});
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        loadFromText(text);
+        return;
+      }catch(e){ lastErr = e; }
+    }
+    alert("levels.json okunamadı. Aynı klasörde olduğundan emin ol.\nHata: " + (lastErr ? lastErr.message : ""));
+  }
+
+  function sortLevels(){
+    // no-op here; keysSorted already sorts; this just rebuilds stable order visually
+    rebuildLevelSelect(levelSelectEl.value);
+    alert("✅ Sıralandı");
+  }
+
+  // Wire UI
+  document.getElementById("btnSave").onclick = saveCurrentLevel;
+  document.getElementById("btnNew").onclick = newLevel;
+  document.getElementById("btnClear").onclick = clearBoard;
+
+  document.getElementById("btnLoad").onclick = ()=> loadLevel(levelSelectEl.value);
+  document.getElementById("btnDuplicate").onclick = duplicateLevel;
+  document.getElementById("btnDelete").onclick = deleteLevel;
+  document.getElementById("btnSort").onclick = sortLevels;
+
+  document.getElementById("btnDownloadJSON").onclick = downloadJSON;
+  document.getElementById("btnCopyJSON").onclick = copyJSON;
+  document.getElementById("btnLoadPasted").onclick = loadPasted;
+  document.getElementById("btnLoadFromFetch").onclick = fetchLevels;
+
+  fileInput.addEventListener("change", async (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    const text = await f.text();
+    loadFromText(text);
+    fileInput.value = "";
+  });
+
+  // Init
+  renderPalette();
+  renderBoard();
+  fetchLevels().catch(()=>{});
+})();
+</script>
+</body>
+</html>
