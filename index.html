@@ -194,8 +194,6 @@ body.dim .touch-controls{
 </style>
 </head>
 <body>
-<div id="versionBadge" style="position:fixed;left:10px;top:10px;z-index:999999;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.22);padding:6px 10px;border-radius:10px;font:12px system-ui;color:#fff">Slide Logic DEBUG v2026-01-19</div>
-
 
 <div id="loadError" style="max-width:900px;margin:10px 12px 0;padding:10px 12px;border:1px solid rgba(255,80,80,.55);border-radius:12px;background:rgba(120,0,0,.25);color:#ffd6d6;display:none;white-space:pre-wrap"></div>
 <div class="controls">
@@ -584,9 +582,7 @@ Denenen adresler:
     try{
       await loadLevelsFromJSON();
     }catch(err){
-      alert('levels.json yuklenemedi. Repo icinde levels.json dosyasi index.html ile ayni klasorde olmali.
-
-Hata: ' + err.message);
+      alert('levels.json yuklenemedi. Repo icinde levels.json dosyasi index.html ile ayni klasorde olmali.\n\nHata: ' + err.message);
       throw err;
     }
 
