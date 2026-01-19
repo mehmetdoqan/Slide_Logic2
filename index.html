@@ -195,6 +195,8 @@ body.dim .touch-controls{
 </head>
 <body>
 
+
+<div id="loadError" style="max-width:900px;margin:10px 12px 0;padding:10px 12px;border:1px solid rgba(255,80,80,.55);border-radius:12px;background:rgba(120,0,0,.25);color:#ffd6d6;display:none;white-space:pre-wrap"></div>
 <div class="controls">
   <select id="levelSelect"></select>
   <button id="undoBtn">Geri Al</button>
@@ -238,20 +240,50 @@ body.dim .touch-controls{
   const nextLevelBtn = document.getElementById("nextLevelBtn");
   const closeOverlayBtn = document.getElementById("closeOverlayBtn");
 
+  const DEFAULT_LEVELS_DATA = {"Bölüm 1": [{"c": "blue", "x": 1, "y": 2}, {"c": "yellow", "x": 2, "y": 1}, {"c": "green", "x": 3, "y": 3}, {"c": "purple", "x": 4, "y": 0}, {"c": "red", "x": 4, "y": 4}], "Bölüm 2": [{"c": "blue", "x": 1, "y": 2}, {"c": "yellow", "x": 2, "y": 0}, {"c": "green", "x": 3, "y": 3}, {"c": "purple", "x": 4, "y": 1}, {"c": "red", "x": 1, "y": 4}], "Bölüm 3": [{"c": "blue", "x": 1, "y": 1}, {"c": "yellow", "x": 1, "y": 4}, {"c": "green", "x": 3, "y": 0}, {"c": "purple", "x": 3, "y": 3}, {"c": "red", "x": 4, "y": 4}], "Bölüm 4": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 2, "y": 3}, {"c": "green", "x": 3, "y": 1}, {"c": "purple", "x": 4, "y": 0}, {"c": "red", "x": 1, "y": 4}], "Bölüm 5": [{"c": "blue", "x": 1, "y": 1}, {"c": "yellow", "x": 3, "y": 0}, {"c": "green", "x": 3, "y": 4}, {"c": "red", "x": 1, "y": 4}], "Bölüm 6": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 1, "y": 4}, {"c": "green", "x": 4, "y": 3}, {"c": "red", "x": 2, "y": 0}], "Bölüm 7": [{"c": "blue", "x": 0, "y": 1}, {"c": "yellow", "x": 2, "y": 0}, {"c": "green", "x": 3, "y": 2}, {"c": "purple", "x": 3, "y": 4}, {"c": "red", "x": 1, "y": 4}], "Bölüm 8": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 0, "y": 4}, {"c": "green", "x": 1, "y": 1}, {"c": "purple", "x": 3, "y": 0}, {"c": "red", "x": 3, "y": 3}], "Bölüm 9": [{"c": "blue", "x": 1, "y": 3}, {"c": "yellow", "x": 2, "y": 2}, {"c": "green", "x": 3, "y": 4}, {"c": "purple", "x": 4, "y": 0}, {"c": "red", "x": 2, "y": 0}], "Bölüm 10": [{"c": "blue", "x": 0, "y": 4}, {"c": "yellow", "x": 1, "y": 1}, {"c": "green", "x": 2, "y": 4}, {"c": "purple", "x": 4, "y": 2}, {"c": "red", "x": 4, "y": 4}], "Bölüm 11": [{"c": "blue", "x": 0, "y": 1}, {"c": "yellow", "x": 2, "y": 0}, {"c": "green", "x": 2, "y": 2}, {"c": "purple", "x": 2, "y": 3}, {"c": "orange", "x": 4, "y": 1}, {"c": "red", "x": 2, "y": 1}], "Bölüm 12": [{"c": "blue", "x": 1, "y": 0}, {"c": "yellow", "x": 1, "y": 4}, {"c": "green", "x": 4, "y": 1}, {"c": "red", "x": 4, "y": 4}], "Bölüm 13": [{"c": "blue", "x": 0, "y": 3}, {"c": "yellow", "x": 1, "y": 0}, {"c": "green", "x": 2, "y": 4}, {"c": "purple", "x": 3, "y": 1}, {"c": "red", "x": 3, "y": 3}], "Bölüm 14": [{"c": "blue", "x": 0, "y": 2}, {"c": "yellow", "x": 0, "y": 4}, {"c": "green", "x": 2, "y": 0}, {"c": "purple", "x": 3, "y": 3}, {"c": "orange", "x": 4, "y": 1}, {"c": "red", "x": 1, "y": 4}], "Bölüm 15": [{"c": "blue", "x": 1, "y": 1}, {"c": "yellow", "x": 2, "y": 3}, {"c": "green", "x": 4, "y": 0}, {"c": "purple", "x": 4, "y": 2}, {"c": "red", "x": 4, "y": 4}], "Bölüm 16": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 1, "y": 2}, {"c": "green", "x": 1, "y": 4}, {"c": "purple", "x": 4, "y": 2}, {"c": "red", "x": 2, "y": 0}], "Bölüm 17": [{"c": "blue", "x": 1, "y": 2}, {"c": "yellow", "x": 2, "y": 0}, {"c": "green", "x": 3, "y": 3}, {"c": "purple", "x": 4, "y": 0}, {"c": "red", "x": 1, "y": 4}], "Bölüm 18": [{"c": "blue", "x": 0, "y": 4}, {"c": "yellow", "x": 2, "y": 4}, {"c": "green", "x": 4, "y": 4}, {"c": "red", "x": 2, "y": 0}], "Bölüm 19": [{"c": "blue", "x": 0, "y": 3}, {"c": "yellow", "x": 1, "y": 0}, {"c": "green", "x": 2, "y": 1}, {"c": "purple", "x": 2, "y": 4}, {"c": "orange", "x": 3, "y": 2}, {"c": "red", "x": 4, "y": 4}], "Bölüm 20": [{"c": "blue", "x": 0, "y": 2}, {"c": "yellow", "x": 1, "y": 0}, {"c": "green", "x": 1, "y": 4}, {"c": "purple", "x": 4, "y": 1}, {"c": "red", "x": 3, "y": 3}], "Bölüm 21": [{"c": "blue", "x": 0, "y": 3}, {"c": "yellow", "x": 2, "y": 1}, {"c": "green", "x": 2, "y": 2}, {"c": "purple", "x": 3, "y": 4}, {"c": "orange", "x": 4, "y": 2}, {"c": "red", "x": 2, "y": 0}], "Bölüm 22": [{"c": "blue", "x": 0, "y": 1}, {"c": "yellow", "x": 0, "y": 4}, {"c": "green", "x": 3, "y": 3}, {"c": "purple", "x": 4, "y": 1}, {"c": "red", "x": 4, "y": 4}], "Bölüm 23": [{"c": "blue", "x": 0, "y": 1}, {"c": "yellow", "x": 1, "y": 0}, {"c": "green", "x": 3, "y": 1}, {"c": "purple", "x": 4, "y": 3}, {"c": "red", "x": 1, "y": 4}], "Bölüm 24": [{"c": "blue", "x": 1, "y": 2}, {"c": "yellow", "x": 3, "y": 1}, {"c": "green", "x": 3, "y": 4}, {"c": "purple", "x": 4, "y": 4}, {"c": "red", "x": 0, "y": 4}], "Bölüm 25": [{"c": "blue", "x": 0, "y": 1}, {"c": "yellow", "x": 2, "y": 1}, {"c": "green", "x": 3, "y": 1}, {"c": "purple", "x": 4, "y": 4}, {"c": "red", "x": 1, "y": 4}], "Bölüm 26": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 0, "y": 2}, {"c": "green", "x": 3, "y": 3}, {"c": "purple", "x": 4, "y": 1}, {"c": "red", "x": 2, "y": 0}], "Bölüm 27": [{"c": "blue", "x": 0, "y": 2}, {"c": "yellow", "x": 0, "y": 4}, {"c": "green", "x": 1, "y": 0}, {"c": "purple", "x": 3, "y": 2}, {"c": "orange", "x": 4, "y": 0}, {"c": "red", "x": 4, "y": 4}], "Bölüm 28": [{"c": "blue", "x": 0, "y": 3}, {"c": "yellow", "x": 1, "y": 0}, {"c": "green", "x": 4, "y": 0}, {"c": "purple", "x": 4, "y": 2}, {"c": "red", "x": 4, "y": 4}], "Bölüm 29": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 0, "y": 4}, {"c": "green", "x": 4, "y": 0}, {"c": "purple", "x": 4, "y": 4}, {"c": "red", "x": 2, "y": 0}], "Bölüm 30": [{"c": "blue", "x": 0, "y": 1}, {"c": "yellow", "x": 0, "y": 2}, {"c": "green", "x": 1, "y": 4}, {"c": "purple", "x": 3, "y": 4}, {"c": "orange", "x": 4, "y": 1}, {"c": "red", "x": 2, "y": 0}], "Bölüm 31": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 0, "y": 2}, {"c": "green", "x": 1, "y": 4}, {"c": "purple", "x": 2, "y": 0}, {"c": "orange", "x": 4, "y": 1}, {"c": "red", "x": 3, "y": 3}], "Bölüm 32": [{"c": "blue", "x": 0, "y": 4}, {"c": "yellow", "x": 1, "y": 0}, {"c": "green", "x": 2, "y": 4}, {"c": "purple", "x": 4, "y": 1}, {"c": "red", "x": 1, "y": 4}], "Bölüm 33": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 0, "y": 3}, {"c": "green", "x": 1, "y": 0}, {"c": "purple", "x": 3, "y": 4}, {"c": "orange", "x": 4, "y": 1}, {"c": "red", "x": 4, "y": 4}], "Bölüm 34": [{"c": "blue", "x": 0, "y": 2}, {"c": "yellow", "x": 0, "y": 4}, {"c": "green", "x": 2, "y": 0}, {"c": "purple", "x": 3, "y": 3}, {"c": "orange", "x": 4, "y": 0}, {"c": "red", "x": 4, "y": 4}], "Bölüm 35": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 0, "y": 4}, {"c": "green", "x": 2, "y": 1}, {"c": "purple", "x": 4, "y": 0}, {"c": "orange", "x": 4, "y": 4}, {"c": "red", "x": 2, "y": 0}], "Bölüm 36": [{"c": "blue", "x": 0, "y": 1}, {"c": "yellow", "x": 0, "y": 3}, {"c": "green", "x": 2, "y": 4}, {"c": "purple", "x": 4, "y": 1}, {"c": "orange", "x": 4, "y": 3}, {"c": "red", "x": 2, "y": 0}], "Bölüm 37": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 0, "y": 3}, {"c": "green", "x": 3, "y": 0}, {"c": "purple", "x": 4, "y": 0}, {"c": "red", "x": 3, "y": 3}], "Bölüm 38": [{"c": "blue", "x": 0, "y": 2}, {"c": "yellow", "x": 1, "y": 2}, {"c": "green", "x": 2, "y": 0}, {"c": "purple", "x": 4, "y": 0}, {"c": "orange", "x": 4, "y": 4}, {"c": "red", "x": 1, "y": 4}], "Bölüm 39": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 0, "y": 2}, {"c": "green", "x": 0, "y": 4}, {"c": "purple", "x": 2, "y": 0}, {"c": "orange", "x": 4, "y": 0}, {"c": "red", "x": 4, "y": 4}], "Bölüm 40": [{"c": "blue", "x": 0, "y": 0}, {"c": "yellow", "x": 2, "y": 0}, {"c": "green", "x": 4, "y": 0}, {"c": "purple", "x": 4, "y": 3}, {"c": "red", "x": 1, "y": 4}]};
+
   let levelsData = {};
 
   async function loadLevelsFromJSON(){
-    // GitHub Pages uyumlu: levels.json bu index.html ile AYNI KLASORDE olmali
-    const url = new URL('levels.json', window.location.href);
-    const res = await fetch(url.toString(), { cache: 'no-store' });
-    if(!res.ok){
-      throw new Error(`HTTP ${res.status} - levels.json okunamadi`);
+    const errBox = document.getElementById('loadError');
+    const tried = [];
+    const candidates = [
+      'levels.json',
+      './levels.json',
+      // bazen Pages yolu sonunda index.html ile gelir; base'i temizleyip dene
+      (window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname.replace(/\/[^\/]*$/, '/') ) + 'levels.json'
+    ];
+
+    for(const path of candidates){
+      try{
+        const url = new URL(path, window.location.href);
+        tried.push(url.toString());
+        const res = await fetch(url.toString(), { cache: 'no-store' });
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if(!data || typeof data !== 'object') throw new Error('Format hatali (object bekleniyor)');
+        levelsData = data;
+        if(errBox){ errBox.style.display='none'; errBox.textContent=''; }
+        return;
+      }catch(e){
+        // devam et
+      }
     }
-    const data = await res.json();
-    if(!data || typeof data !== 'object'){
-      throw new Error('levels.json formati hatali (object bekleniyor)');
+
+    // Hepsi basarisizsa: fallback + ekranda net hata
+    levelsData = DEFAULT_LEVELS_DATA;
+    if(errBox){
+      errBox.style.display='block';
+      errBox.textContent =
+        'levels.json okunamadi, bu nedenle dahili yedek level listesi kullanildi.
+' +
+        'GitHub Pages icin repo kok dizininde (root) levels.json oldugundan emin ol.
+
+' +
+        'Denenen adresler:
+- ' + tried.join('
+- ');
     }
-    levelsData = data;
   }
 
 
